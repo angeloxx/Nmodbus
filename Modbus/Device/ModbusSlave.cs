@@ -102,7 +102,18 @@ namespace Modbus.Device
 			ModbusSlaveRequestReceived.Raise(this, new ModbusSlaveRequestEventArgs(request));
 
 			IModbusMessage response;
-			switch (request.FunctionCode)
+            /*
+             * ANGELOXX: if datastore is null, this Slave returns an error to the Master
+             * I use the datastore = null asignment to emulate a missing device. Returned
+             * error is 0x02 -> Illegal Data Address
+             */
+            if (DataStore == null)
+            {
+                byte[] messageFrame = new byte[] { request.SlaveAddress, (byte)(Modbus.ExceptionOffset + request.FunctionCode), 2 };
+                return ModbusMessageFactory.CreateModbusMessage<SlaveExceptionResponse>(messageFrame);
+            }
+
+            switch (request.FunctionCode)
 			{
 				case Modbus.ReadCoils:
 					response = ReadDiscretes((ReadCoilsInputsRequest) request, DataStore, DataStore.CoilDiscretes);
